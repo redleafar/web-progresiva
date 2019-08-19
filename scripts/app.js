@@ -110,7 +110,19 @@ import { openDB, deleteDB, wrap, unwrap } from 'https://unpkg.com/idb?module';
      * Methods for dealing with the model
      *
      ****************************************************************************/
-
+    
+    // Saves a timetable
+    app.saveTimetableCard = async function(timetable) {
+        const db = await openDB('Schedule6', 1);
+        
+        let tx = db.transaction('timetables', 'readwrite')
+        let store = tx.objectStore('timetables')
+    
+        await store.put(timetable)
+    
+        await tx.complete
+        db.close()
+    }
 
     app.getSchedule = function (key, label) {
         var url = 'https://api-ratp.pierre-grimaud.fr/v3/schedules/' + key;
@@ -125,6 +137,9 @@ import { openDB, deleteDB, wrap, unwrap } from 'https://unpkg.com/idb?module';
                     result.label = label;
                     result.created = response._metadata.date;
                     result.schedules = response.result.schedules;
+                                        
+                    app.saveTimetableCard(result);
+
                     app.updateTimetableCard(result);
                 }
             } else {
@@ -143,6 +158,48 @@ import { openDB, deleteDB, wrap, unwrap } from 'https://unpkg.com/idb?module';
             app.getSchedule(key);
         });
     };
+
+    app.getSchedulesFromDatabase = async function () {        
+        const db = await openDB('Schedule6', 1);
+    
+        let tx = db.transaction('timetables', 'readonly')
+        let store = tx.objectStore('timetables')
+            
+        let allSavedItems = await store.getAll()
+    
+        console.log(allSavedItems);
+
+        allSavedItems.forEach(function (timetable) {
+            app.updateTimetableCard(timetable);
+        });
+        
+        db.close();
+    }                
+
+    // Checks if the database exists, if it doesn't, get the schedule for the initial station, if it does load the schedules from the db
+    app.checkIfDBExists = async function() {
+        const db = await openDB('Schedule6', 1, {
+            upgrade(db, oldVersion, newVersion, transaction) {
+                // Create a store of objects
+                const store = db.createObjectStore('timetables', {
+                    // The 'id' property of the object will be the key.
+                    keyPath: 'id',
+                    // If it isn't explicitly set, create a value by auto incrementing.
+                    autoIncrement: true,
+                });
+
+                store.createIndex('key', 'key');
+                app.getSchedule('metros/1/bastille/A', 'Bastille, Direction La Défense');
+                    app.selectedTimetables = [
+                            {key: initialStationTimetable.key, label: initialStationTimetable.label}
+                ];                    
+                
+                return;   
+            }
+        });
+
+        app.getSchedulesFromDatabase();                    
+    }
 
     /*
      * Fake timetable data that is presented when the user first uses the app,
@@ -186,32 +243,8 @@ import { openDB, deleteDB, wrap, unwrap } from 'https://unpkg.com/idb?module';
         console.log('This browser doesn\'t support IndexedDB');
         return;
     }
-    else {
-        const db = openDB('test82345', 1, {
-            upgrade(db, oldVersion, newVersion, transaction) {
-                if (oldVersion == 0) {
-                    app.getSchedule('metros/1/bastille/A', 'Bastille, Direction La Défense');
-                    app.selectedTimetables = [
-                            {key: initialStationTimetable.key, label: initialStationTimetable.label}
-                    ];
-                    
-                transaction.then =
-                    function(event) {    
-                        db.add('schedule', {
-                            key: initialStationTimetable.key,
-                            label: initialStationTimetable.label,
-                        });
-                    }                    
-                }
-                                
-                console.log('upgrade');
-            },
-            blocked() {
-                console.log('blocked');
-            },
-            blocking() {
-                console.log('blocking');
-            }
-          });
-    }
+    else {                
+        app.checkIfDBExists() ;
+    }    
 })();
+
