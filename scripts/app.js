@@ -182,8 +182,36 @@ import { openDB, deleteDB, wrap, unwrap } from 'https://unpkg.com/idb?module';
      *   SimpleDB (https://gist.github.com/inexorabletash/c8069c042b734519680c)
      ************************************************************************/
 
-    app.getSchedule('metros/1/bastille/A', 'Bastille, Direction La Défense');
-    app.selectedTimetables = [
-        {key: initialStationTimetable.key, label: initialStationTimetable.label}
-    ];
+    if (!('indexedDB' in window)) {
+        console.log('This browser doesn\'t support IndexedDB');
+        return;
+    }
+    else {
+        const db = openDB('test82345', 1, {
+            upgrade(db, oldVersion, newVersion, transaction) {
+                if (oldVersion == 0) {
+                    app.getSchedule('metros/1/bastille/A', 'Bastille, Direction La Défense');
+                    app.selectedTimetables = [
+                            {key: initialStationTimetable.key, label: initialStationTimetable.label}
+                    ];
+                    
+                transaction.then =
+                    function(event) {    
+                        db.add('schedule', {
+                            key: initialStationTimetable.key,
+                            label: initialStationTimetable.label,
+                        });
+                    }                    
+                }
+                                
+                console.log('upgrade');
+            },
+            blocked() {
+                console.log('blocked');
+            },
+            blocking() {
+                console.log('blocking');
+            }
+          });
+    }
 })();
