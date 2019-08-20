@@ -91,8 +91,18 @@
     </svg>
   </div>
 
+ <script>
+  // Check that service workers are supported
+  if ('serviceWorker' in navigator) {
+    // Use the window load event to keep the page load performant
+    window.addEventListener('load', () => {      
+      navigator.serviceWorker.register('/service-worker.js');
+    });
+  }
+  </script> 
+
   <!-- Uncomment the line below when ready to test with fake data -->
-  <script type="module" src="scripts/app.js" async></script>
+  <script type="module" src="scripts/app.js" async></script>  
 
 </body>
 </html>

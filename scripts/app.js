@@ -165,9 +165,7 @@ import { openDB, deleteDB, wrap, unwrap } from 'https://unpkg.com/idb?module';
         let tx = db.transaction('timetables', 'readonly')
         let store = tx.objectStore('timetables')
             
-        let allSavedItems = await store.getAll()
-    
-        console.log(allSavedItems);
+        let allSavedItems = await store.getAll()            
 
         allSavedItems.forEach(function (timetable) {
             app.updateTimetableCard(timetable);
