@@ -39,3 +39,15 @@ new workbox.strategies.CacheFirst({
     ],
 })
 );
+
+workbox.routing.registerRoute(
+  'http://127.0.0.1:8887/',
+  workbox.strategies.staleWhileRevalidate({
+      cacheName: 'My-awesome-cache-news-headline',
+      cacheExpiration: {
+          maxAgeSeconds: 60 * 30 //cache the news content for 30mn
+      }
+  })
+);
+
+workbox.precaching.precacheAndRoute([]);
